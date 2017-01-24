@@ -1,11 +1,10 @@
 var gameOfLife = {
-  
   width: 12, 
   height: 12, // width and height dimensions of the board
   stepInterval: null, // should be used to hold reference to an interval that is "playing" the game
+  play: true,
 
   createAndShowBoard: function () {
-    
     // create <table> element
     var goltable = document.createElement("tbody");
     
@@ -29,64 +28,134 @@ var gameOfLife = {
   },
 
   forEachCell: function (iteratorFunc) {
-    /* 
-      Write forEachCell here. You will have to visit
-      each cell on the board, call the "iteratorFunc" function,
-      and pass into func, the cell and the cell's x & y
-      coordinates. For example: iteratorFunc(cell, x, y)
-    */
+    for (var h = 0; h < this.height; h++) {
+      for (var w = 0; w < this.width; w++){
+      var  elem = (document.getElementById( h + "-" + w ));
+        iteratorFunc(elem, h, w);
+      }
+    }
+  },
+
+  makeDead: function(elem){
+    elem.className = "dead";
+    elem.setAttribute('data-status', 'dead');
+  },
+
+  makeAlive: function(elem){
+    elem.className = "alive";
+    elem.setAttribute('data-status', 'alive');
+  },  
+
+
+  clearBoard: function(){
+    this.play = false;
+    var that = this;
+    this.forEachCell(function(elem){
+      that.makeDead(elem);
+    });
+  },
+
+  randomize: function(){
+    this.play = false;
+    var that = this;
+    this.forEachCell(function(elem){
+      if (Math.random() < .5) {
+        that.makeAlive(elem);
+      } else {
+        that.makeDead(elem);
+      }
+    });
   },
   
   setupBoardEvents: function() {
-    // each board cell has an CSS id in the format of: "x-y" 
-    // where x is the x-coordinate and y the y-coordinate
-    // use this fact to loop through all the ids and assign
-    // them "click" events that allow a user to click on 
-    // cells to setup the initial state of the game
-    // before clicking "Step" or "Auto-Play"
-    
-    // clicking on a cell should toggle the cell between "alive" & "dead"
-    // for ex: an "alive" cell be colored "blue", a dead cell could stay white
-    
-    // EXAMPLE FOR ONE CELL
-    // Here is how we would catch a click event on just the 0-0 cell
-    // You need to add the click event on EVERY cell on the board
-    
+    var that = this;
     var onCellClick = function (e) {
-      
-      // QUESTION TO ASK YOURSELF: What is "this" equal to here?
-      
-      // how to set the style of the cell when it's clicked
       if (this.getAttribute('data-status') == 'dead') {
-        this.className = "alive";
-        this.setAttribute('data-status', 'alive');
+        that.makeAlive(this)
       } else {
-        this.className = "dead";
-        this.setAttribute('data-status', 'dead');
+        that.makeDead(this);
       }
-      
     };
     
-    var cell00 = document.getElementById('0-0');
-    cell00.addEventListener('click', onCellClick);
+    gameOfLife.forEachCell(function(elem){
+      elem.addEventListener('click', onCellClick);
+    });
+
+    document.getElementById('clear_btn').addEventListener('click', this.clearBoard.bind(this));
+    document.getElementById('reset_btn').addEventListener('click', this.randomize.bind(this));
+    document.getElementById('step_btn').addEventListener('click', this.step.bind(this));
+    document.getElementById('play_btn').addEventListener('click', this.enableAutoPlay.bind(this));
   },
 
-  step: function () {
-    // Here is where you want to loop through all the cells
-    // on the board and determine, based on it's neighbors,
-    // whether the cell should be dead or alive in the next
-    // evolution of the game. 
-    //
-    // You need to:
-    // 1. Count alive neighbors for all cells
-    // 2. Set the next state of all cells based on their alive neighbors
+  checkNeighbors: function(x,y){
+    var aliveCount = 0;
+    for (var i = x-1; i < x + 2; i++){
+      for (var j = y-1; j < y + 2; j++){
+        if (!(i=== x && j === y) && i >= 0 && j >= 0 && i < this.height && j < this.width){
+          elem = document.getElementById(i + "-" + j);
+          if (elem.getAttribute('data-status') == 'alive')
+            aliveCount++;
+          }
+      }
+    }
+    return aliveCount;
   },
+
+   step: function () {
+    // create 2d array
+    var boardArr = [];
+    for (var i = 0; i < this.height; i++){
+      boardArr.push([]);
+    }
+
+    // Fill in boardArr for next iteration
+    var that = this;
+    this.forEachCell(function(elem, x, y){
+      var count =  that.checkNeighbors(x,y);
+      
+      if (elem.getAttribute('data-status') == 'alive') {
+        if (count < 2 || count > 3){
+          boardArr[x][y] = false;
+        } else {
+          boardArr[x][y] = true;
+        }
+      } else {
+        if (count === 3){
+          boardArr[x][y] = true;
+        } else {
+          boardArr[x][y] = false;
+        }
+      }
+    });
+
+    // create next iteration
+    this.forEachCell(function(elem, x, y){
+      if (boardArr[x][y]) {
+        that.makeAlive(elem);
+      } else {
+        that.makeDead(elem);
+      }
+    });
+   
+  }, 
 
   enableAutoPlay: function () {
-    // Start Auto-Play by running the 'step' function
-    // automatically repeatedly every fixed time interval  
-  }
-  
+    this.play = true;
+    var that = this;
+    function playLoop(){
+      setTimeout(function(){
+        that.step();
+        console.log('hello');
+        if (that.play === true) playLoop();
+      } , 250);
+      
+    }
+    playLoop();
+  }  
 };
 
+
+
 gameOfLife.createAndShowBoard();
+
+
