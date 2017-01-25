@@ -71,7 +71,7 @@ var gameOfLife = {
     var that = this;
     var onCellClick = function (e) {
       if (this.getAttribute('data-status') == 'dead') {
-        that.makeAlive(this)
+        that.makeAlive(this);
       } else {
         that.makeDead(this);
       }
@@ -145,7 +145,6 @@ var gameOfLife = {
     function playLoop(){
       setTimeout(function(){
         that.step();
-        console.log('hello');
         if (that.play === true) playLoop();
       } , 250);
       
